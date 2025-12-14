@@ -7,7 +7,7 @@
 # TIM PENULIS : 1. Hananta Angger
 #               2. Rinto Martinus
 #               3. Himawan Nugraha
-# PEMBIMBING  : Deden Dinar Iskandar, Ph.D.
+# PEMBIMBING  : Dr. agr. Deden Dinar Iskandar
 # DESKRIPSI   : Script replikasi untuk estimasi model Data Panel (Fixed/Random Effect)
 #               dan Ekonometrika Spasial (SAR/SEM/SDM) serta pemetaan LISA.
 # INPUT       : 1. Shapefile Jawa Timur (.shp) peta wilayah
