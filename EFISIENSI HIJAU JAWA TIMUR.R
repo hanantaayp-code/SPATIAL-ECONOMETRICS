@@ -26,12 +26,12 @@
 # SBM_Efficiency ~ SAKIP + AGRN + SXA + LMS + POP + URB + INT + LNINF
 # VARIABEL DEPENDEN  : NILAI EFISIENSI HIJAU HASIL OLAH MENGGUNAKAN SBM DEA
 # VARIABEL INDEPENDEN: 1. SAKIP : PROKSI KUALITAS INSTITUSI
-#                      2. AGRN  : PROKSI KEGIATAN EKONOMI SEKTOR AGRIKULTUR
-#                      3. SXA
+#                      2. AGRN  : ANGGARAN PEMERINTAH DAERAH
+#                      3. SXA   : INTERAKSI SAKIP X ANGGARAN PEMDA
 #                      4. LMS   : RATA-RATA LAMA SEKOLAH
 #                      5. POP   : POPULASI
 #                      6. URB   : PRESENTASE PENDUDUK KOTA
-#                      7. INT   : 
+#                      7. INT   : SHARE SECTOR INDUSTRI
 #                      8. LNINF : INFRASTRUKTUR DIPROKSI DENGAN PANJANG JALAN MANTAP
 # =================================================================================
 
