@@ -17,7 +17,7 @@
 #               2. Estimasi Panel Non Spasial
 #               4. Estimasi Panel Spasial Fixed Effect Model "Individual"
 #               5. Uji Diasnostik dan Goodnes of fit
-# NOTE        : Nanta Adjustment 14 Desember 2025
+# NOTE        : Script by Rinto Martinus, edited by Nanta on December 14, 2025
 # ==============================================================================
 
 # ==============================================================================
