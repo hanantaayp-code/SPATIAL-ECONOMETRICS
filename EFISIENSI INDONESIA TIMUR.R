@@ -40,7 +40,7 @@
 # ==============================================================================
 # Jika belum install, jalankan:
 # install.packages(c("sf", "spdep", "splm", "dplyr", "plm", 
-                    "readxl", "tmap", "ggplot2", "lmtest"))
+#                    "readxl", "tmap", "ggplot2", "lmtest"))
 
 library(sf)       # Manipulasi data spasial (peta)
 library(spdep)    # Matriks pembobot & Uji Moran
@@ -83,10 +83,11 @@ shp_merged <- left_join(shp_panel, data_FIX, by = c("Kabupaten", "Tahun"))
 
 # --- 6. Hapus Duplikat & Validasi ---
 shp_merged <- shp_merged %>% 
-  distinct(Kabupaten, Tahun, .keep_all = TRUE)
+distinct(Kabupaten, Tahun, .keep_all = TRUE)
 
 # Buat dataframe non-spasial untuk analisis panel standar
 panel_df <- st_drop_geometry(shp_merged)
+
 # Hapus kolom yang varians-nya 0 (jika ada)
 varians  <- sapply(panel_df[, sapply(panel_df, is.numeric)], var, na.rm=TRUE)
 panel_df <- panel_df[, c("Kabupaten", "Tahun", names(varians[varians > 0]))]
@@ -182,15 +183,12 @@ print(moran_queen_result)
 # Uji Global Moran's I dengan KERNEL
 moran_kernel_result <- moran.test(as.numeric(shp_ref$SBM_Efficiency), listw_kernel)
 print("--- Hasil Global Moran's I (KERNEL) ---")
-print(moran_kernelL_result)
+print(moran_kernel_result)
 
 # Uji Global Moran's I dengan KNN
 moran_knn_result <- moran.test(as.numeric(shp_ref$SBM_Efficiency), listw_knn)
 print("--- Hasil Global Moran's I (KNN) ---")
 print(moran_knn_result)
-
-print("--- Perbandingan Kebaikan Model (AIC Terkecil Lebih Baik) ---")
-print(comparison_df)
 
 # ==============================================================================
 # BAGIAN V: ANALISIS LOKAL (LISA / Local Moran's I) & MAPPING
@@ -265,7 +263,59 @@ for (thn in 2018:2022) {
 
 
 # ==============================================================================
-# BAGIAN VI: MODEL EKONOMETRIKA SPASIAL (SAR, SEM, SDM)
+# BAGIAN VII: UJI DIAGNOSTIK SPASIAL (LAGRANGE MULTIPLIER TEST)
+# ==============================================================================
+# Tujuannya: Menentukan apakah spasial efek ada di Lag (SAR) atau Error (SEM).
+# Hipotesis Nol (H0): Tidak ada autokorelasi spasial.
+# Jika p-value < 0.05, maka tolak H0 (artinya ada pengaruh spasial).
+
+cat("\n--- MELAKUKAN UJI LAGRANGE MULTIPLIER (LM TEST) ---\n")
+
+# 1. LM Test untuk Spatial Lag (SAR)
+lm_lag <- slmtest(model_formula, data = pdata, listw = listw_knn, 
+                  model = "within", test = "lml")
+print("--- 1. LM Test for Spatial Lag (SAR) ---")
+print(lm_lag)
+
+# 2. LM Test untuk Spatial Error (SEM)
+lm_err <- slmtest(model_formula, data = pdata, listw = listw_knn, 
+                  model = "within", test = "lme")
+print("--- 2. LM Test for Spatial Error (SEM) ---")
+print(lm_err)
+
+# --- UJI ROBUST (Dilakukan jika KEDUANYA Signifikan) ---
+# Jika LM Lag DAN LM Error sama-sama signifikan (p < 0.05),
+# maka kita lihat versi Robust-nya (RLM).
+
+# 3. Robust LM Test untuk Spatial Lag
+rlm_lag <- slmtest(model_formula, data = pdata, listw = listw_knn, 
+                   model = "within", test = "rlml")
+print("--- 3. Robust LM Test for Spatial Lag ---")
+print(rlm_lag)
+
+# 4. Robust LM Test untuk Spatial Error
+rlm_err <- slmtest(model_formula, data = pdata, listw = listw_knn, 
+                   model = "within", test = "rlme")
+print("--- 4. Robust LM Test for Spatial Error ---")
+print(rlm_err)
+
+
+# ==============================================================================
+# PANDUAN KEPUTUSAN (RULE OF THUMB) - ANSELIN (1988)
+# ==============================================================================
+# Catat hasil p-value di atas, lalu ikuti aturan ini untuk Publikasi:
+#
+# KONDISI A: Hanya LM Lag yang signifikan -> Gunakan Model SAR.
+# KONDISI B: Hanya LM Error yang signifikan -> Gunakan Model SEM.
+# KONDISI C: Keduanya signifikan -> Lihat Robust LM (RLM).
+#            - Jika RLM Lag sig & RLM Error tidak -> SAR.
+#            - Jika RLM Error sig & RLM Lag tidak -> SEM.
+#            - Jika keduanya masih signifikan -> SDM (Spatial Durbin Model) 
+#              seringkali menjadi pilihan teraman karena mencakup keduanya.
+# ==============================================================================
+
+# ==============================================================================
+# BAGIAN VII: MODEL EKONOMETRIKA SPASIAL (SAR, SEM, SDM)
 # ==============================================================================
 # Menggunakan pembobot KNN (listw_knn) dan asumsi Fixed Effect ("individual")
 
@@ -313,7 +363,7 @@ print("--- Ringkasan Model SDM ---")
 summary(model_sdm)
 
 # =================================================================================
-# BAGIAN VII: GOODNES OF FIT ---
+# BAGIAN VIII: GOODNES OF FIT ---
 # =================================================================================
 
 # ---. Pemilihan Model Terbaik (AIC Comparison) ---
@@ -336,7 +386,7 @@ print("--- PERBANDINGAN MODEL (Pilih AIC Terkecil) ---")
 print(aic_vals)
 
 # ==============================================================================
-# BAGIAN VIII: DEKOMPOSISI DAMPAK (DIRECT, INDIRECT, TOTAL) - WAJIB SDM
+# BAGIAN IX: DEKOMPOSISI DAMPAK (DIRECT, INDIRECT, TOTAL) - WAJIB UNTUK SDM
 # ==============================================================================
 # Karena model spasial (terutama SDM) mengandung feedback loop, koefisien
 # tidak bisa diinterpretasi langsung. Harus dihitung marginal effect-nya.
@@ -363,7 +413,8 @@ if(aic_vals$AIC[3] <= aic_vals$AIC[1] & aic_vals$AIC[3] <= aic_vals$AIC[2]) {
   print("SDM bukan model dengan AIC terendah. Silakan sesuaikan kode impacts untuk SAR jika SAR terpilih.")
 }
 
-print("--- SELESAI ---")
-
-
+#====================================================================================
+print("---PUJI TUHAN OLAH DATA SELESAI ---")
 print("--- SCRIPT SELESAI: SIAP UNTUK PUBLIKASI ---")
+#===================================================================================
+
